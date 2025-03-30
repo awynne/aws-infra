@@ -178,6 +178,12 @@
         - /tmp/awscliv2.zip
         - /tmp/aws
         
+    - name: Add "set -o vi" to .bashrc for vi mode in bash
+      lineinfile:
+        path: /home/ubuntu/.bashrc
+        line: "set -o vi"
+        state: present
+        
     - name: Create setup completion marker
       copy:
         content: "Installation completed by Ansible"
