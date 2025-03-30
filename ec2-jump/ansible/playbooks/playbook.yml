@@ -1,0 +1,187 @@
+---
+- name: Configure EC2 instance
+  hosts: jump_host
+  become: yes
+  gather_facts: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      
+    - name: Upgrade all packages
+      apt:
+        upgrade: dist
+      
+    - name: Install required packages
+      apt:
+        name:
+          - htop
+          - git
+          - vim
+          - wget
+          - unzip
+        state: present
+      
+    - name: Install Docker dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+        
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+      
+    - name: Enable and start Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+      
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+      
+    - name: Install HashiCorp apt key
+      apt_key:
+        url: https://apt.releases.hashicorp.com/gpg
+        state: present
+      
+    - name: Add HashiCorp repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+        state: present
+        
+    - name: Install Terraform
+      apt:
+        name: terraform
+        state: present
+        update_cache: yes
+        
+    - name: Verify Terraform installation
+      command: terraform --version
+      register: terraform_version
+      changed_when: false
+      
+    - name: Display Terraform version
+      debug:
+        var: terraform_version.stdout
+      
+    - name: Install Python3 pip
+      apt:
+        name: python3-pip
+        state: present
+        
+    - name: Install Ansible and dependencies
+      pip:
+        name:
+          - ansible
+          - ansible-core
+        state: present
+        
+    - name: Check Ansible binary is in path
+      command: which ansible
+      register: ansible_path
+      changed_when: false
+      
+    - name: Display Ansible path
+      debug:
+        var: ansible_path.stdout
+      
+    - name: Install AWS CLI dependencies
+      apt:
+        name:
+          - unzip
+          - curl
+        state: present
+        
+    - name: Download AWS CLI installer
+      get_url:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        dest: /tmp/awscliv2.zip
+        mode: '0644'
+        
+    - name: Extract AWS CLI installer
+      ansible.builtin.unarchive:
+        src: /tmp/awscliv2.zip
+        dest: /tmp
+        remote_src: yes
+        creates: /tmp/aws
+        
+    - name: Install AWS CLI
+      command: /tmp/aws/install
+      args:
+        creates: /usr/local/bin/aws
+        
+    - name: Verify AWS CLI installation
+      command: aws --version
+      register: aws_version
+      changed_when: false
+      
+    - name: Display AWS CLI version
+      debug:
+        var: aws_version.stdout
+        
+    - name: Verify AWS CLI can access instance profile
+      command: aws sts get-caller-identity
+      register: aws_identity
+      changed_when: false
+      
+    - name: Display AWS identity
+      debug:
+        var: aws_identity.stdout
+        
+    - name: Create AWS config directory
+      file:
+        path: /home/ubuntu/.aws
+        state: directory
+        mode: '0755'
+        owner: ubuntu
+        group: ubuntu
+        
+    - name: Configure AWS CLI default region
+      copy:
+        dest: /home/ubuntu/.aws/config
+        content: |
+          [default]
+          region = us-east-1
+          output = json
+        mode: '0644'
+        owner: ubuntu
+        group: ubuntu
+        
+    - name: Clean up AWS CLI installer
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /tmp/awscliv2.zip
+        - /tmp/aws
+        
+    - name: Create setup completion marker
+      copy:
+        content: "Installation completed by Ansible"
+        dest: /home/ubuntu/setup_complete.txt
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'

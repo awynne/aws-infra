@@ -1,0 +1,29 @@
+# Terraform files
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/.terraform/
+
+# Local .terraform directories
+**/.terraform/*
+
+# SSH keys
+*.pem
+*.key
+/tmp/temp_key
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ansible
+*.retry
