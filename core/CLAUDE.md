@@ -15,33 +15,47 @@ This is an AWS infrastructure project using Terraform and Ansible:
 When working with this project, run the following commands:
 
 ```bash
-# Initialize Terraform with S3 backend
-make init
+# INITIAL SETUP
+# Create the state storage resources
+make create-state-resources
 
+# Configure Terraform to use the remote state
+make setup-backend
+
+# INFRASTRUCTURE MANAGEMENT
 # Plan Terraform changes
 make plan
 
 # Apply Terraform changes
 make apply
 
+# Destroy infrastructure (preserves state resources)
+make destroy-infra
+
+# JUMP HOST OPERATIONS
 # Configure the jump host with Ansible
 make configure
 
 # SSH to the jump host
 make ssh
+
+# CLEANUP
+# Remove state resources when completely done with project
+make delete-state-resources
 ```
 
 ## Terraform Remote State
 
 The project uses Terraform with remote state management in S3 and state locking with DynamoDB:
 
-- S3 bucket: `dividedsky-terraform-state`
-- DynamoDB table: `dividedsky-terraform-locks`
+- S3 bucket: `core-terraform-state`
+- DynamoDB table: `core-terraform-locks`
 - State path: `terraform/infra.tfstate`
 
 If the remote state needs to be set up from scratch:
 ```bash
-make setup-remote-state
+make create-state-resources
+make setup-backend
 ```
 
 ## Security Practices
