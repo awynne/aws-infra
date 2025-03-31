@@ -6,6 +6,7 @@ terraform.tfstate.backup
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terraform/.terraform/
+terraform/remote_state.tf
 
 # Local .terraform directories
 **/.terraform/*
