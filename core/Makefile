@@ -28,18 +28,11 @@ setup-backend:
 	@echo "Setting up Terraform backend to use existing remote state..."
 	./scripts/setup-backend.sh
 
-# Operations
-ssh:
-	./scripts/ssh-to-jump-host.sh
-
-configure:
-	./scripts/run-ansible.sh
-
 # Clean temporary files
 clean:
 	rm -f /tmp/ansible-key-*.pem /tmp/temp_key
 
-clean-state:
+clean-state-local:
 	rm -f terraform/terraform.tfstate terraform/terraform.tfstate.backup
 	rm -f terraform/.terraform/terraform.tfstate
 	
@@ -55,11 +48,7 @@ help:
 	@echo "  make apply            - Apply Terraform changes"
 	@echo "  make destroy-infra    - Destroy all infrastructure resources managed by Terraform"
 	@echo ""
-	@echo "Jump Host Operations:"
-	@echo "  make ssh              - SSH to the jump host"
-	@echo "  make configure        - Configure the jump host with Ansible"
-	@echo ""
 	@echo "Cleanup:"
 	@echo "  make delete-state-resources - Delete S3 bucket and DynamoDB table for remote state"
 	@echo "  make clean            - Clean up temporary files"
-	@echo "  make clean-state      - Remove local Terraform state files"
+	@echo "  make clean-state-local      - Remove local Terraform state files"

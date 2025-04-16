@@ -1,0 +1,3 @@
+STATE_BUCKET=core-terraform-state-20250415210350
+LOCKS_TABLE=core-terraform-locks-20250415210350
+REGION=us-east-1
