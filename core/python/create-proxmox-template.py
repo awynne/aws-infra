@@ -32,6 +32,11 @@ create_vm_parser.add_argument("--disk-size", type=int, default=20, help="Disk si
 convert_template_parser = subparsers.add_parser("convert-template", help="Convert a VM to a template")
 convert_template_parser.add_argument("--vmid", type=int, required=True, help="VM ID to convert")
 
+# Remove VM command
+remove_vm_parser = subparsers.add_parser("remove-vm", help="Remove a VM")
+remove_vm_parser.add_argument("--vmid", type=int, required=True, help="VM ID to remove")
+remove_vm_parser.add_argument("--force", action="store_true", help="Force remove even if VM is running")
+
 args = parser.parse_args()
 
 # === Command Execution ===
@@ -106,4 +111,54 @@ elif args.command == "convert-template":
 
     except Exception as e:
         print(f"❌ Failed to convert VM to template: {e}")
+        exit(1)
+
+elif args.command == "remove-vm":
+    try:
+        # === Remove VM ===
+        print(f"Removing VM with ID {args.vmid}...")
+        
+        # Check if the VM exists
+        try:
+            vm_status = proxmox.nodes(NODE).qemu(args.vmid).status.current.get()
+        except Exception:
+            print(f"❌ VM with ID {args.vmid} does not exist.")
+            exit(1)
+            
+        # Check if VM is running and not forced
+        if vm_status.get("status") == "running" and not args.force:
+            print(f"❌ VM with ID {args.vmid} is running. Use --force to remove it anyway.")
+            exit(1)
+            
+        # Stop VM if running and force is specified
+        if vm_status.get("status") == "running" and args.force:
+            print(f"🛑 Stopping VM with ID {args.vmid} forcefully...")
+            try:
+                proxmox.nodes(NODE).qemu(args.vmid).status.stop.post()
+                print("⏳ Waiting for VM to stop...")
+                
+                # Wait for VM to stop (simple polling)
+                import time
+                max_wait = 30  # seconds
+                for _ in range(max_wait):
+                    current_status = proxmox.nodes(NODE).qemu(args.vmid).status.current.get()
+                    if current_status.get("status") == "stopped":
+                        print("✅ VM stopped successfully.")
+                        break
+                    time.sleep(1)
+                else:
+                    print("⚠️ Timed out waiting for VM to stop, but proceeding with removal...")
+            except Exception as stop_error:
+                print(f"⚠️ Error stopping VM: {stop_error}, but proceeding with removal...")
+        
+        # Remove the VM
+        try:
+            proxmox.nodes(NODE).qemu(args.vmid).delete()
+            print(f"✅ VM with ID {args.vmid} successfully removed!")
+        except Exception as delete_error:
+            print(f"❌ Failed to remove VM: {delete_error}")
+            exit(1)
+            
+    except Exception as e:
+        print(f"❌ Failed to remove VM: {e}")
         exit(1)
