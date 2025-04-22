@@ -1,0 +1,18 @@
+- name: Create or destroy Proxmox VM
+  hosts: proxmox
+  become: false
+  gather_facts: false
+  roles:
+    - role: proxmox_qemu_vm
+      vars:
+        template_vmid: 9000
+        new_vmid: 9200
+        hostname: "vm-{{ new_vmid }}"
+        storage: "local-zfs"
+        bridge: "vmbr0"
+        cores: 2
+        memory: 4096
+        disk_size: "20G"
+        ssh_keys:
+          - "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
+        vm_state: "present"

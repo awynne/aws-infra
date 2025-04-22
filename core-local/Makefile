@@ -28,10 +28,6 @@ setup-backend:
 	@echo "Setting up Terraform backend to use existing remote state..."
 	./scripts/setup-backend.sh
 
-# Clean temporary files
-clean:
-	rm -f /tmp/ansible-key-*.pem /tmp/temp_key
-
 clean-state-local:
 	rm -f terraform/terraform.tfstate terraform/terraform.tfstate.backup
 	rm -f terraform/.terraform/terraform.tfstate
@@ -76,8 +72,8 @@ help:
 	@echo "  make setup-backend    - Configure Terraform to use existing remote state resources"
 	@echo ""
 	@echo "Proxmox VM Management:"
-	@echo "  make create-vm        - Create a new VM with default parameters"
-	@echo "  make create-vm-custom - Create a new VM with custom parameters"
+	@echo "  make create-vm        - Create a new VM from template with default parameters"
+	@echo "  make create-vm-custom - Create a new VM from template with custom parameters"
 	@echo "  make convert-template - Convert a VM to a template (prompts for VM ID)"
 	@echo "  make remove-vm        - Remove a VM (prompts for VM ID and force option)"
 	@echo ""

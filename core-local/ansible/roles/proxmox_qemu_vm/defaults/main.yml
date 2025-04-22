@@ -1,0 +1,10 @@
+template_vmid: 9000
+new_vmid: 9100
+hostname: "vm-node"
+storage: "local-lvm"
+bridge: "vmbr0"
+cores: 2
+memory: 2048
+disk_size: "32G"
+ssh_keys: []
+vm_state: "present"

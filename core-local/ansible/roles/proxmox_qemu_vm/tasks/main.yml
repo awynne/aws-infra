@@ -1,0 +1,71 @@
+- name: Check if QEMU VM exists
+  ansible.builtin.command: qm status {{ new_vmid }}
+  register: vm_status
+  failed_when: false
+  changed_when: false
+
+- name: Stop QEMU VM if running and vm_state == absent
+  ansible.builtin.command: qm stop {{ new_vmid }}
+  when:
+    - vm_state == "absent"
+    - "'status: running' in vm_status.stdout"
+
+- name: Wait for VM to stop
+  ansible.builtin.command: qm status {{ new_vmid }}
+  register: vm_stop_check
+  until: "'status: stopped' in vm_stop_check.stdout"
+  retries: 30
+  delay: 1
+  when:
+    - vm_state == "absent"
+    - "'status: running' in vm_status.stdout"
+
+- name: Destroy QEMU VM if vm_state == absent
+  ansible.builtin.command: qm destroy {{ new_vmid }} --purge
+  when:
+    - vm_state == "absent"
+    - "'status' in vm_status.stdout"
+
+- name: Clone VM from QEMU template
+  ansible.builtin.command: >
+    qm clone {{ template_vmid }} {{ new_vmid }}
+    --name {{ hostname }}
+    --full
+  when:
+    - vm_state == "present"
+    - "'status' not in vm_status.stdout"
+
+- name: Resize disk if needed
+  ansible.builtin.command: >
+    qm resize {{ new_vmid }} scsi0 {{ disk_size }}
+  when: vm_state == "present"
+
+- name: Set VM resources (CPU and memory)
+  ansible.builtin.command: >
+    qm set {{ new_vmid }} --cores {{ cores }} --memory {{ memory }}
+  when: vm_state == "present"
+
+- name: Write SSH key to temporary file
+  ansible.builtin.copy:
+    content: "{{ item }}"
+    dest: "/tmp/vm_ssh_key.pub"
+    mode: '0600'
+  loop: "{{ ssh_keys }}"
+  when: vm_state == "present" and ssh_keys | length > 0
+  run_once: true
+
+- name: Inject SSH keys via cloud-init
+  ansible.builtin.command: >
+    qm set {{ new_vmid }} --sshkeys /tmp/vm_ssh_key.pub --ciuser root --ipconfig0 ip=dhcp
+  when: vm_state == "present" and ssh_keys | length > 0
+
+- name: Set cloud-init drive
+  ansible.builtin.command: >
+    qm set {{ new_vmid }} --ide2 {{ storage }}:cloudinit
+  when: vm_state == "present"
+
+- name: Start VM if not running
+  ansible.builtin.command: qm start {{ new_vmid }}
+  when:
+    - vm_state == "present"
+    - "'status: stopped' in vm_status.stdout"
